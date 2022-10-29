@@ -1,56 +1,93 @@
 cabal-version:      3.0
 name:               finetex
 version:            0.1.0.0
+
 synopsis:           Fine markup language targeting into LaTeX
+description:
 
--- A longer description of the package.
--- description:
 homepage:           https://github.com/Lev135/FineTeX-2
+bug-reports:        https://github.com/Lev135/FineTeX-2/issues
 
--- A URL where users can report bugs.
--- bug-reports:
 license:            BSD-3-Clause
 license-file:       LICENSE
 author:             Lev Dvorkin
 maintainer:         lev_135@mail.ru
-
--- A copyright notice.
--- copyright:
+copyright:          (c) 2022, Lev Dvorkin
 category:           Math
-extra-source-files:
-    CHANGELOG.md
-    README.md
+extra-source-files: CHANGELOG.md
+                    README.md
+
+common basics
+  default-language:   Haskell2010
+
+  default-extensions: OverloadedStrings
+                      NamedFieldPuns
+                      DuplicateRecordFields
+                      OverloadedLabels
+                      TupleSections
+                      BlockArguments
+                      LambdaCase
+
+                      FlexibleContexts
+                      FlexibleInstances
+                      MultiParamTypeClasses
+                      RankNTypes
+                      ScopedTypeVariables
+                      ConstraintKinds
+                      DataKinds
+                      PartialTypeSignatures
+                      DeriveGeneric
+
+  ghc-options:        -Wall
+                      -Wcompat
+                      -Wincomplete-record-updates
+                      -Wincomplete-uni-patterns
+                      -Wredundant-constraints
+                      -Wmissing-exported-signatures
+                      -Wno-name-shadowing
+                      -Wno-unused-do-bind
+
+  build-depends:      base
+                    , text
+                    , containers
+                    , mtl
+                    , extra
+
+common lib-deps
+  build-depends:      megaparsec
+                    , parser-combinators
+                    , space-consumers
+                    , prettyprinter
+                    , optics
+                    , generic-optics
+                    , exceptions
+                    , safe
 
 library
-    exposed-modules:  MyLib
+  import:             basics, lib-deps
+  hs-source-dirs:     src
+  exposed-modules:    Language.FineTeX
 
-    -- Modules included in this library but not exported.
-    -- other-modules:
+executable texgen
+  import:             basics
+  hs-source-dirs:     app
+  main-is:            Main.hs
+  other-modules:      IOUtils
 
-    -- LANGUAGE extensions used by modules in this package.
-    -- other-extensions:
-    build-depends:    base ^>=4.14.3.0
-    hs-source-dirs:   src
-    default-language: Haskell2010
-
-executable finetex
-    main-is:          Main.hs
-
-    -- Modules included in this executable, other than Main.
-    -- other-modules:
-
-    -- LANGUAGE extensions used by modules in this package.
-    -- other-extensions:
-    build-depends:
-        base ^>=4.14.3.0,
-        finetex
-
-    hs-source-dirs:   app
-    default-language: Haskell2010
+  build-depends:      finetex
+                    , optparse-applicative
+                    , filepath
+                    , pretty-simple
+  if os(windows)
+    build-depends:    Win32
+  ghc-options:        -O2 -threaded
 
 test-suite finetex-test
-    default-language: Haskell2010
-    type:             exitcode-stdio-1.0
-    hs-source-dirs:   test
-    main-is:          MyLibTest.hs
-    build-depends:    base ^>=4.14.3.0
+  import:             basics, lib-deps
+  hs-source-dirs:     test
+  main-is:            Spec.hs
+  type:               exitcode-stdio-1.0
+  build-depends:      finetex
+                    , hspec
+                    , hspec-megaparsec
+                    , raw-strings-qq
