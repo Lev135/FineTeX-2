@@ -67,6 +67,8 @@ library
   import:             basics, lib-deps
   hs-source-dirs:     src
   exposed-modules:    Language.FineTeX
+                      Language.FineTeX.Utils
+                      Language.FineTeX.Source.Syntax
 
 executable texgen
   import:             basics
