@@ -21,27 +21,27 @@ spec = do
       prs' a "a1" `failsLeaving` "1"
   context "ident" do
     it "simple" $
-      prs' ident "abc" `parses` "abc" `leaving` ""
+      prsi ident "abc" `parses` "abc" `leaving` ""
     it "with spaces" $
-      prs' ident "abc  " `parses` "abc" `leaving` ""
+      prsi ident "abc  " `parses` "abc" `leaving` ""
     it "with numbers" $
-      prs' ident "abc123 " `parses` "abc123" `leaving` ""
+      prsi ident "abc123 " `parses` "abc123" `leaving` ""
     it "nonAlphanum symbols" $
-      prs' ident "a2c(" `parses` "a2c" `leaving` "("
+      prsi ident "a2c(" `parses` "a2c" `leaving` "("
     it "alphanum in the next word" $
-      prs' ident "a2c b3d" `parses` "a2c" `leaving` "b3d"
+      prsi ident "a2c b3d" `parses` "a2c" `leaving` "b3d"
     it "fails: empty" $
-      prs' ident "" `failsLeaving` ""
+      prsi ident "" `failsLeaving` ""
     it "fails: num first" $
-      prs' ident "123abc" `failsLeaving` "123abc"
+      prsi ident "123abc" `failsLeaving` "123abc"
   context "word" do
     it "simple" $
-      prs' word "abc" `parses` "abc" `leaving` ""
+      prsi word "abc" `parses` "abc" `leaving` ""
     it "unicode symbols" $
-      prs' word "α∇♠⁽" `parses` "α∇♠⁽" `leaving` ""
+      prsi word "α∇♠⁽" `parses` "α∇♠⁽" `leaving` ""
     it "with spaces" $
-      prs' word "abc  " `parses` "abc" `leaving` ""
+      prsi word "abc  " `parses` "abc" `leaving` ""
     it "with the next word" $
-      prs' word "a2c b3d" `parses` "a2c" `leaving` "b3d"
+      prsi word "a2c b3d" `parses` "a2c" `leaving` "b3d"
     it "fails: empty" $
-      prs' word "" `failsLeaving` ""
+      prsi word "" `failsLeaving` ""

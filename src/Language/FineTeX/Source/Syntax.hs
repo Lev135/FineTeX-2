@@ -5,11 +5,11 @@ module Language.FineTeX.Source.Syntax where
 
 import Data.Text (Text)
 import GHC.Generics (Generic)
-import Language.FineTeX.Utils (Info, WrapI)
+import Language.FineTeX.Utils (Info)
 
 data Document i = Document
   { definitions :: Maybe (DefBlock i)
-  , body        :: [WrapI i DocElement]
+  , body        :: [DocElement i]
   }
   deriving (Eq, Generic, Ord, Show)
 
@@ -18,12 +18,12 @@ data Document i = Document
 
 -- * Definitions
 newtype DefBlock i
-  = DefinitionBlock [WrapI i DefSubBlock]
+  = DefBlock [DefSubBlock i]
   deriving (Eq, Generic, Ord, Show)
 
 data DefSubBlock i
-  = DefModeBlock [WrapI i DefMode]
-  | DefInModeBlock [WrapI i DefInModeBlock]
+  = DefModeBlock [DefMode i]
+  | DefInModeBlock (Info i Text) [DefInModeBlock i]
   deriving (Eq, Generic, Ord, Show)
 
 newtype DefMode i
@@ -31,23 +31,23 @@ newtype DefMode i
   deriving (Eq, Generic, Ord, Show)
 
 data DefInModeBlock i
-  = DefEnvBlock [WrapI i DefEnv]
-  | DefPrefBlock [WrapI i DefPref]
+  = DefEnvBlock [DefEnv i]
+  | DefPrefBlock [DefPref i]
   deriving (Eq, Generic, Ord, Show)
 
 -- | @name {args} ["#" inner] "=>" {process}@
 data DefEnv i = DefEnv
   { name    :: Info i Text
-  , args    :: [WrapI i PatMatchExp]
-  , inner   :: Maybe (WrapI i EnvInner)
-  , process :: [WrapI i ProcStatement]
+  , args    :: [PatMatchExp i]
+  , inner   :: Maybe (EnvInner i)
+  , process :: [ProcStatement i]
   }
   deriving (Eq, Generic, Ord, Show)
 
 -- | @"#Verb" | mode@
 data EnvInner i
   = Verb
-  | NoVerb (Mode i)
+  | NonVerb (Mode i)
   deriving (Eq, Generic, Ord, Show)
 
 -- | @[\"NoPref"] [modeName]@
@@ -61,27 +61,27 @@ data Mode i = Mode
 -- | @[name:] expr [# innerMode] => {process}@
 data DefPref i = DefPref
   { name      :: Maybe (Info i Text)
-  , expr      :: WrapI i PatMatchExp
-  , innerMode :: Maybe (WrapI i Mode)
-  , process   :: [WrapI i ProcStatement]
+  , expr      :: PatMatchExp i
+  , innerMode :: Maybe (Mode i)
+  , process   :: [ProcStatement i]
   }
   deriving (Eq, Generic, Ord, Show)
 
 -- ** Primitives
 
 newtype PatMatchExp i
-  = PatMatchExp [WrapI i PatMatchEl]
+  = PatMatchExp [PatMatchEl i]
   deriving (Eq, Generic, Ord, Show)
 
 data PatMatchEl i = PatMatchEl
   { varName  :: Maybe (Info i Text)
-  , matchExp :: WrapI i RegExp
+  , matchExp :: RegExp i
   }
   deriving (Eq, Generic, Ord, Show)
 
 data ProcStatement i = ProcStatement
   { name    :: Info i Text
-  , procRes :: Maybe (WrapI i Exp)
+  , procRes :: Maybe (Exp i)
   }
   deriving (Eq, Generic, Ord, Show)
 
@@ -89,20 +89,20 @@ data RegExp i
   = REEmpty
   | REVoid
   | REName (Info i Text)
-  | RECharSet (WrapI i CharSetExp)
-  | RESeq (WrapI i RegExp) (WrapI i RegExp)
-  | REOr (WrapI i RegExp) (WrapI i RegExp)
-  | REBehind (WrapI i CharSetExp) (WrapI i RegExp)
-  | REAhead (WrapI i RegExp) (WrapI i CharSetExp)
+  | RECharSet (CharSetExp i)
+  | RESeq (RegExp i) (RegExp i)
+  | REOr (RegExp i) (RegExp i)
+  | REBehind (CharSetExp i) (RegExp i)
+  | REAhead (RegExp i) (CharSetExp i)
   deriving (Eq, Generic, Ord, Show)
 
 data CharSetExp i
-  = SName (WrapI i CharSetExp)
+  = SName (CharSetExp i)
   | SPositive [CharRange]
   | SNegative [CharRange]
-  | SUnion (WrapI i CharSetExp) (WrapI i CharSetExp)
-  | SIntersection (WrapI i CharSetExp) (WrapI i CharSetExp)
-  | SDifference (WrapI i CharSetExp) (WrapI i CharSetExp)
+  | SUnion (CharSetExp i) (CharSetExp i)
+  | SIntersection (CharSetExp i) (CharSetExp i)
+  | SDifference (CharSetExp i) (CharSetExp i)
   deriving (Eq, Generic, Ord, Show)
 
 type CharRange = (Char, Char)
@@ -110,7 +110,7 @@ type CharRange = (Char, Char)
 data Exp i
   = EStringLit (Info i Text)
   | EIdent (Info i Text)
-  | EApp (WrapI i Exp) (WrapI i Exp)
+  | EApp (Exp i) (Exp i)
   deriving (Eq, Generic, Ord, Show)
 
 
@@ -118,7 +118,7 @@ data Exp i
 data DocElement i
   = DocParLine [Info i WordOrSpace]
   | DocEnvironment (Info i Text) [Info i ArgStr] (EnvBody i DocElement)
-  | DocPref (Info i Text) (Maybe ArgStr) [WrapI i DocElement]
+  | DocPref (Info i Text) (Maybe ArgStr) [DocElement i]
   | DocEmptyLine
   deriving (Eq, Generic, Ord, Show)
 
@@ -131,5 +131,5 @@ data WordOrSpace
 
 data EnvBody i el
   = VerbBody [Info i Text]
-  | NonVerbBody [WrapI i el]
+  | NonVerbBody [el i]
   deriving (Eq, Generic, Ord, Show)

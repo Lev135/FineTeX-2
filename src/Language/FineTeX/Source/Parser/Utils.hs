@@ -5,7 +5,7 @@ module Language.FineTeX.Source.Parser.Utils (
   L.nonIndented,
   headedMany, headedSome,
   lineFold, betweenSymbols,
-  keyword, ident, word
+  L.symbol, keyword, ident, word
 ) where
 
 import Data.Char (isAlpha, isAlphaNum, isSpace)

@@ -70,6 +70,8 @@ library
                       Language.FineTeX.Utils
                       Language.FineTeX.Source.Syntax
                       Language.FineTeX.Source.Parser.Utils
+                      Language.FineTeX.Source.Parser.Definitions
+
 
 executable texgen
   import:             basics
