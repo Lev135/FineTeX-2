@@ -69,6 +69,7 @@ library
   exposed-modules:    Language.FineTeX
                       Language.FineTeX.Utils
                       Language.FineTeX.Source.Syntax
+                      Language.FineTeX.Source.Parser.Utils
 
 executable texgen
   import:             basics
@@ -88,6 +89,9 @@ test-suite finetex-test
   import:             basics, lib-deps
   hs-source-dirs:     test
   main-is:            Spec.hs
+  other-modules:      Utils
+                      Source.Parser.UtilsSpec
+
   type:               exitcode-stdio-1.0
   build-depends:      finetex
                     , hspec
