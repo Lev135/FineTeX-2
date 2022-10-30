@@ -8,12 +8,12 @@ import Language.FineTeX.Source.Syntax
 import Text.Megaparsec
 import Text.Megaparsec.Char
 
-pDefinitions :: ParserM m => m (DefBlock PosOff)
+pDefinitions :: ParserM m => m DefBlock
 pDefinitions = nonIndented $
   DefBlock <$ keyword "@Define"
     `headedMany` pDefSubBlock
 
-pDefSubBlock :: ParserM m => m (DefSubBlock PosOff)
+pDefSubBlock :: ParserM m => m DefSubBlock
 pDefSubBlock = choice
   [ DefModeBlock <$ keyword "@Modes"
       `headedMany` pDefMode
@@ -21,10 +21,10 @@ pDefSubBlock = choice
       `headedMany` pDefInModeBlock
   ]
 
-pDefMode :: ParserM m => m (DefMode PosOff)
+pDefMode :: ParserM m => m DefMode
 pDefMode = DefMode <$> ident
 
-pDefInModeBlock :: ParserM m => m (DefInModeBlock PosOff)
+pDefInModeBlock :: ParserM m => m DefInModeBlock
 pDefInModeBlock = choice
   [ DefEnvBlock <$ keyword "@Environments"
       `headedMany` pDefEnv
@@ -32,7 +32,7 @@ pDefInModeBlock = choice
       `headedMany` pDefPref
   ]
 
-pDefEnv :: ParserM m => m (DefEnv PosOff)
+pDefEnv :: ParserM m => m DefEnv
 pDefEnv = lineFold do
   name <- ident
   args <- many pArg
@@ -43,7 +43,7 @@ pDefEnv = lineFold do
   process <- many pProcess
   pure DefEnv{..}
 
-pDefPref :: ParserM m => m (DefPref PosOff)
+pDefPref :: ParserM m => m DefPref
 pDefPref = lineFold do
   name <- optional $ ident <* symbol ":"
   expr <- pPatMatchExp
@@ -54,34 +54,34 @@ pDefPref = lineFold do
   process <- many pProcess
   pure DefPref{..}
 
-pArg :: ParserM m => m (PatMatchExp PosOff)
+pArg :: ParserM m => m PatMatchExp
 pArg = betweenSymbols "(" ")" pPatMatchExp
 
-pPatMatchExp :: ParserM m => m (PatMatchExp PosOff)
+pPatMatchExp :: ParserM m => m PatMatchExp
 pPatMatchExp = PatMatchExp <$> some pPatMatchEl
 
-pPatMatchEl :: ParserM m => m (PatMatchEl PosOff)
+pPatMatchEl :: ParserM m => m PatMatchEl
 pPatMatchEl =  (PatMatchEl Nothing <$> pRegExp)
     <|> betweenSymbols "(" ")"
           (PatMatchEl . Just <$> ident <* symbol ":" <*> pRegExp)
 
-pRegExp :: ParserM m => m (RegExp PosOff)
+pRegExp :: ParserM m => m RegExp
 pRegExp = REWord <$ keyword "Word"
 
-pMode :: ParserM m => m (Mode PosOff)
+pMode :: ParserM m => m Mode
 pMode = do
   noPref <- isJust <$> optional (keyword "NoPref")
   modeName <- optional ident
   pure Mode {..}
 
-pProcess :: ParserM m => m (ProcStatement PosOff)
+pProcess :: ParserM m => m ProcStatement
 pProcess = do
   char '@'
   name <- ident
   exp <- optional pExp
   pure $ ProcStatement name exp
 
-pExp :: ParserM m => m (Exp PosOff)
+pExp :: ParserM m => m Exp
 pExp = makeExprParser pTerm operators
   where
     pTerm = choice

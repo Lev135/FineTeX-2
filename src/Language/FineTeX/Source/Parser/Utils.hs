@@ -1,7 +1,7 @@
 module Language.FineTeX.Source.Parser.Utils (
   ParserM, BaseParserM,
   L.ScT, runScT,
-  PosOff, located,
+  located,
   L.nonIndented,
   headedMany, headedSome,
   lineFold, betweenSymbols,
@@ -12,7 +12,7 @@ import Data.Char (isAlpha, isAlphaNum, isSpace)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void (Void)
-import Language.FineTeX.Utils (Info(..))
+import Language.FineTeX.Source.Syntax (PText, Posed(..))
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer.Stateful (MonadParsecSc)
@@ -25,16 +25,14 @@ type BaseParserM m = MonadParsec Void Text m
 runScT :: MonadParsec Void Text m => L.ScT m a -> m a
 runScT = (`L.runScT` sc)
 
--- | Range of source offsets, where element is situated
-type PosOff = (Int, Int)
 
 -- | Save element's location into `Info`
-located :: ParserM m => m a -> m (Info PosOff a)
+located :: ParserM m => m a -> m (Posed a)
 located pa = do
   b <- getOffset
   a <- pa
   e <- getOffset
-  pure $ I (b, e) a
+  pure $ Posed (Just (b, e)) a
 
 -- | Skip comment (without @eol@ after it)
 skipLineComment :: BaseParserM m => m ()
@@ -65,18 +63,18 @@ keyword :: ParserM m => Text -> m Text
 keyword w = L.lexeme $ string w <* notFollowedBy alphaNumChar
 
 -- | Parse an identifier: alpha character, followed by alphaNum characters
-ident :: ParserM m => m (Info PosOff Text)
+ident :: ParserM m => m PText
 ident = L.lexeme $ located do
   a <- satisfy isAlpha
   as <- takeWhileP Nothing isAlphaNum
   pure $ T.cons a as
 
 -- | Parse a nonempty sequence of non-space characters
-word :: ParserM m => m (Info PosOff Text)
+word :: ParserM m => m PText
 word = L.lexeme $ located $ takeWhile1P Nothing (not . isSpace)
 
 -- | Parse string literal: sequence of arbitrary characters enclosed in quotes
-stringLit :: ParserM m => m (Info PosOff Text)
+stringLit :: ParserM m => m PText
 stringLit = L.lexeme . located $ choice $
   flip map ['\'', '"'] \c ->
     char c *> takeWhileP Nothing (`notElem` ['\r', '\n' , c]) <* char c

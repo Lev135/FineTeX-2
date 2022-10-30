@@ -21,40 +21,40 @@ spec = do
       prs' a "a1" `failsLeaving` "1"
   context "ident" do
     it "simple" $
-      prsi ident "abc" `parses` "abc" `leaving` ""
+      prs' ident "abc" `parses` "abc" `leaving` ""
     it "with spaces" $
-      prsi ident "abc  " `parses` "abc" `leaving` ""
+      prs' ident "abc  " `parses` "abc" `leaving` ""
     it "with numbers" $
-      prsi ident "abc123 " `parses` "abc123" `leaving` ""
+      prs' ident "abc123 " `parses` "abc123" `leaving` ""
     it "nonAlphanum symbols" $
-      prsi ident "a2c(" `parses` "a2c" `leaving` "("
+      prs' ident "a2c(" `parses` "a2c" `leaving` "("
     it "alphanum in the next word" $
-      prsi ident "a2c b3d" `parses` "a2c" `leaving` "b3d"
+      prs' ident "a2c b3d" `parses` "a2c" `leaving` "b3d"
     it "fails: empty" $
-      prsi ident "" `failsLeaving` ""
+      prs' ident "" `failsLeaving` ""
     it "fails: num first" $
-      prsi ident "123abc" `failsLeaving` "123abc"
+      prs' ident "123abc" `failsLeaving` "123abc"
   context "word" do
     it "simple" $
-      prsi word "abc" `parses` "abc" `leaving` ""
+      prs' word "abc" `parses` "abc" `leaving` ""
     it "unicode symbols" $
-      prsi word "α∇♠⁽" `parses` "α∇♠⁽" `leaving` ""
+      prs' word "α∇♠⁽" `parses` "α∇♠⁽" `leaving` ""
     it "with spaces" $
-      prsi word "abc  " `parses` "abc" `leaving` ""
+      prs' word "abc  " `parses` "abc" `leaving` ""
     it "with the next word" $
-      prsi word "a2c b3d" `parses` "a2c" `leaving` "b3d"
+      prs' word "a2c b3d" `parses` "a2c" `leaving` "b3d"
     it "fails: empty" $
-      prsi word "" `failsLeaving` ""
+      prs' word "" `failsLeaving` ""
   context "string literal" do
     it "simple '" $
-      prsi stringLit "'abc'" `parses` "abc" `leaving` ""
+      prs' stringLit "'abc'" `parses` "abc" `leaving` ""
     it "simple \"" $
-      prsi stringLit "\"abc\"" `parses` "abc" `leaving` ""
+      prs' stringLit "\"abc\"" `parses` "abc" `leaving` ""
     it "next without spaces" $
-      prsi stringLit "'abc'd" `parses` "abc" `leaving` "d"
+      prs' stringLit "'abc'd" `parses` "abc" `leaving` "d"
     it "next with spaces" $
-      prsi stringLit "'abc'  d" `parses` "abc" `leaving` "d"
+      prs' stringLit "'abc'  d" `parses` "abc" `leaving` "d"
     it "fail: eof" $
-      prsi stringLit "'abc" `failsLeaving` ""
+      prs' stringLit "'abc" `failsLeaving` ""
     it "fail: eol" $
-      prsi stringLit "'abc\nd'" `failsLeaving` "\nd'"
+      prs' stringLit "'abc\nd'" `failsLeaving` "\nd'"

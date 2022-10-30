@@ -3,14 +3,31 @@
 -}
 module Language.FineTeX.Source.Syntax where
 
-import Data.Bifunctor (Bifunctor(..))
+import Data.Function (on)
 import Data.Text (Text)
 import GHC.Generics (Generic)
-import Language.FineTeX.Utils (Info)
 
-data Document i = Document
-  { definitions :: Maybe (DefBlock i)
-  , body        :: [DocElement i]
+-- | Range of source offsets, where element is situated
+type Pos = Maybe (Int, Int)
+
+data Posed a = Posed
+  { getPos :: Pos
+  , getVal :: a
+  }
+  deriving (Generic)
+
+instance Eq a => Eq (Posed a) where
+  (==) = (==) `on` getVal
+instance Ord a => Ord (Posed a) where
+  compare = compare `on` getVal
+instance Show a => Show (Posed a) where
+  show = show . getVal
+
+type PText = Posed Text
+
+data Document = Document
+  { definitions :: Maybe DefBlock
+  , body        :: [DocElement]
   }
   deriving (Eq, Generic, Ord, Show)
 
@@ -18,109 +35,92 @@ data Document i = Document
 -- * Imports (TODO)
 
 -- * Definitions
-newtype DefBlock i
-  = DefBlock [DefSubBlock i]
+newtype DefBlock
+  = DefBlock [DefSubBlock]
   deriving (Eq, Generic, Ord, Show)
 
-data DefSubBlock i
-  = DefModeBlock [DefMode i]
-  | DefInModeBlock (Info i Text) [DefInModeBlock i]
+data DefSubBlock
+  = DefModeBlock [DefMode]
+  | DefInModeBlock PText [DefInModeBlock]
   deriving (Eq, Generic, Ord, Show)
 
-newtype DefMode i
-  = DefMode { name :: Info i Text }
+newtype DefMode
+  = DefMode { name :: PText }
   deriving (Eq, Generic, Ord, Show)
 
-data DefInModeBlock i
-  = DefEnvBlock [DefEnv i]
-  | DefPrefBlock [DefPref i]
+data DefInModeBlock
+  = DefEnvBlock [DefEnv]
+  | DefPrefBlock [DefPref]
   deriving (Eq, Generic, Ord, Show)
 
 -- | @name {args} ["#" inner] "=>" {process}@
-data DefEnv i = DefEnv
-  { name    :: Info i Text
-  , args    :: [PatMatchExp i]
-  , inner   :: Maybe (EnvInner i)
-  , process :: [ProcStatement i]
+data DefEnv = DefEnv
+  { name    :: PText
+  , args    :: [PatMatchExp]
+  , inner   :: Maybe EnvInner
+  , process :: [ProcStatement]
   }
   deriving (Eq, Generic, Ord, Show)
 
 -- | @"#Verb" | mode@
-data EnvInner i
+data EnvInner
   = Verb
-  | NonVerb (Mode i)
+  | NonVerb Mode
   deriving (Eq, Generic, Ord, Show)
 
 -- | @[\"NoPref"] [modeName]@
-data Mode i = Mode
-  { modeName :: Maybe (Info i Text)
+data Mode = Mode
+  { modeName :: Maybe PText
   , noPref   :: Bool
   }
   deriving (Eq, Generic, Ord, Show)
 
 
 -- | @[name:] expr [# innerMode] => {process}@
-data DefPref i = DefPref
-  { name      :: Maybe (Info i Text)
-  , expr      :: PatMatchExp i
-  , innerMode :: Maybe (Mode i)
-  , process   :: [ProcStatement i]
+data DefPref = DefPref
+  { name      :: Maybe PText
+  , expr      :: PatMatchExp
+  , innerMode :: Maybe Mode
+  , process   :: [ProcStatement]
   }
   deriving (Eq, Generic, Ord, Show)
 
 -- ** Primitives
 
-newtype PatMatchExp i
-  = PatMatchExp [PatMatchEl i]
+newtype PatMatchExp
+  = PatMatchExp [PatMatchEl]
   deriving (Eq, Generic, Ord, Show)
 
-data PatMatchEl i = PatMatchEl
-  { varName  :: Maybe (Info i Text)
-  , matchExp :: RegExp i
+data PatMatchEl = PatMatchEl
+  { varName  :: Maybe PText
+  , matchExp :: RegExp
   }
   deriving (Eq, Generic, Ord, Show)
 
-data ProcStatement i = ProcStatement
-  { name    :: Info i Text
-  , procRes :: Maybe (Exp i)
+data ProcStatement = ProcStatement
+  { name    :: PText
+  , procRes :: Maybe Exp
   }
   deriving (Eq, Generic, Ord, Show)
 
-instance Functor ProcStatement where
-  fmap f ProcStatement{name, procRes} =
-    ProcStatement
-      { name = first f name
-      , procRes = fmap f <$> procRes
-      }
-
-data RegExp i = REWord deriving (Eq, Generic, Ord, Show)
+data RegExp = REWord deriving (Eq, Generic, Ord, Show)
 
 type CharRange = (Char, Char)
 
-data Exp i
-  = EStringLit (Info i Text)
-  | EIdent (Info i Text)
-  | EApp (Exp i) (Exp i)
-  | EBinOp (Exp i) (Info i Text) (Exp i)
-  | EPrefOp (Info i Text) (Exp i)
-  | ESufOp (Exp i) (Info i Text)
+data Exp
+  = EStringLit PText
+  | EIdent PText
+  | EApp Exp Exp
+  | EBinOp Exp PText Exp
+  | EPrefOp PText Exp
+  | ESufOp Exp PText
   deriving (Eq, Generic, Ord, Show)
 
-instance Functor Exp where
-  fmap f = \case
-    EStringLit in'      -> EStringLit $ first f in'
-    EIdent in'          -> EIdent $ first f in'
-    EApp exp exp'       -> EApp (f <$> exp) (f <$> exp')
-    EBinOp exp in' exp' -> EBinOp (f <$> exp) (first f in') (f <$> exp')
-    EPrefOp in' exp     -> EPrefOp (first f in') (f <$> exp)
-    ESufOp exp in'      -> ESufOp (f <$> exp) (first f in')
-
-
 -- * Body
-data DocElement i
-  = DocParLine [Info i WordOrSpace]
-  | DocEnvironment (Info i Text) [Info i ArgStr] (EnvBody i DocElement)
-  | DocPref (Info i Text) (Maybe ArgStr) [DocElement i]
+data DocElement
+  = DocParLine [Posed WordOrSpace]
+  | DocEnvironment PText [Posed ArgStr] (EnvBody DocElement)
+  | DocPref PText (Maybe ArgStr) [DocElement]
   | DocEmptyLine
   deriving (Eq, Generic, Ord, Show)
 
@@ -131,7 +131,7 @@ data WordOrSpace
   | Space
   deriving (Eq, Generic, Ord, Show)
 
-data EnvBody i el
-  = VerbBody [Info i Text]
-  | NonVerbBody [el i]
+data EnvBody el
+  = VerbBody [PText]
+  | NonVerbBody [el]
   deriving (Eq, Generic, Ord, Show)
