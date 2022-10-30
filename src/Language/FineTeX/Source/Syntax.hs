@@ -3,6 +3,7 @@
 -}
 module Language.FineTeX.Source.Syntax where
 
+import Data.Bifunctor (Bifunctor(..))
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import Language.FineTeX.Utils (Info)
@@ -85,25 +86,14 @@ data ProcStatement i = ProcStatement
   }
   deriving (Eq, Generic, Ord, Show)
 
-data RegExp i
-  = REEmpty
-  | REVoid
-  | REName (Info i Text)
-  | RECharSet (CharSetExp i)
-  | RESeq (RegExp i) (RegExp i)
-  | REOr (RegExp i) (RegExp i)
-  | REBehind (CharSetExp i) (RegExp i)
-  | REAhead (RegExp i) (CharSetExp i)
-  deriving (Eq, Generic, Ord, Show)
+instance Functor ProcStatement where
+  fmap f ProcStatement{name, procRes} =
+    ProcStatement
+      { name = first f name
+      , procRes = fmap f <$> procRes
+      }
 
-data CharSetExp i
-  = SName (CharSetExp i)
-  | SPositive [CharRange]
-  | SNegative [CharRange]
-  | SUnion (CharSetExp i) (CharSetExp i)
-  | SIntersection (CharSetExp i) (CharSetExp i)
-  | SDifference (CharSetExp i) (CharSetExp i)
-  deriving (Eq, Generic, Ord, Show)
+data RegExp i = REWord deriving (Eq, Generic, Ord, Show)
 
 type CharRange = (Char, Char)
 
@@ -111,7 +101,19 @@ data Exp i
   = EStringLit (Info i Text)
   | EIdent (Info i Text)
   | EApp (Exp i) (Exp i)
+  | EBinOp (Exp i) (Info i Text) (Exp i)
+  | EPrefOp (Info i Text) (Exp i)
+  | ESufOp (Exp i) (Info i Text)
   deriving (Eq, Generic, Ord, Show)
+
+instance Functor Exp where
+  fmap f = \case
+    EStringLit in'      -> EStringLit $ first f in'
+    EIdent in'          -> EIdent $ first f in'
+    EApp exp exp'       -> EApp (f <$> exp) (f <$> exp')
+    EBinOp exp in' exp' -> EBinOp (f <$> exp) (first f in') (f <$> exp')
+    EPrefOp in' exp     -> EPrefOp (first f in') (f <$> exp)
+    ESufOp exp in'      -> ESufOp (f <$> exp) (first f in')
 
 
 -- * Body

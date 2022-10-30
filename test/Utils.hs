@@ -1,5 +1,6 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Utils where
+import Control.Monad (void)
 import Data.Bifunctor
 import Data.String (IsString(..))
 import Data.Text (Text)
@@ -29,14 +30,21 @@ prsi :: ScT (Parsec Void Text) (Info b c) -> Text
   -> (State Text Void, Either (ParseErrorBundle Text Void) (Info () c))
 prsi p = prs' (first (const ()) <$> p)
 
+
+prsI :: Functor f => ScT (Parsec Void Text) (f a) -> Text
+  -> (State Text Void, Either (ParseErrorBundle Text Void) (f ()))
+prsI p = prs' (void <$> p)
+
 parses :: (State s e, Either (ParseErrorBundle s e) a) -> a ->
   ((State s e, Either (ParseErrorBundle s e) a), a)
 parses = (,)
+infixl 2 `parses`
 
 leaving :: (ShowErrorComponent e, VisualStream s, TraversableStream s,
   Show a, Show s, Eq a, Eq s) =>
   ((State s e, Either (ParseErrorBundle s e) a), a) -> s -> IO ()
 leaving = uncurry shouldParseLeaving
+infixl 2 `leaving`
 
 shouldParseLeaving ::
   (ShowErrorComponent e, VisualStream s, TraversableStream s,

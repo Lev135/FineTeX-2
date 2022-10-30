@@ -93,6 +93,7 @@ test-suite finetex-test
   main-is:            Spec.hs
   other-modules:      Utils
                       Source.Parser.UtilsSpec
+                      Source.Parser.Definitions
 
   type:               exitcode-stdio-1.0
   build-depends:      finetex

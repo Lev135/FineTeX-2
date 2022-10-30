@@ -5,7 +5,7 @@ module Language.FineTeX.Source.Parser.Utils (
   L.nonIndented,
   headedMany, headedSome,
   lineFold, betweenSymbols,
-  L.symbol, keyword, ident, word
+  L.symbol, keyword, ident, word, stringLit
 ) where
 
 import Data.Char (isAlpha, isAlphaNum, isSpace)
@@ -74,3 +74,9 @@ ident = L.lexeme $ located do
 -- | Parse a nonempty sequence of non-space characters
 word :: ParserM m => m (Info PosOff Text)
 word = L.lexeme $ located $ takeWhile1P Nothing (not . isSpace)
+
+-- | Parse string literal: sequence of arbitrary characters enclosed in quotes
+stringLit :: ParserM m => m (Info PosOff Text)
+stringLit = L.lexeme . located $ choice $
+  flip map ['\'', '"'] \c ->
+    char c *> takeWhileP Nothing (`notElem` ['\r', '\n' , c]) <* char c

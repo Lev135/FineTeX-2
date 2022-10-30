@@ -6,7 +6,12 @@ data Info i a = I
   { getInfo :: i
   , getVal  :: a
   }
-  deriving (Eq, Functor, Ord, Show)
+  deriving (Eq, Functor, Ord)
+
+instance (Show i, Show a) => Show (Info i a) where
+  show (I i a)
+    | show i == "()" = show a
+    | otherwise =  "I " ++ show i ++ " " ++ show a
 
 instance Bifunctor Info where
   bimap f g (I i a) = I (f i) (g a)

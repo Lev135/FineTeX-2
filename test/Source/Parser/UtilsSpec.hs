@@ -45,3 +45,16 @@ spec = do
       prsi word "a2c b3d" `parses` "a2c" `leaving` "b3d"
     it "fails: empty" $
       prsi word "" `failsLeaving` ""
+  context "string literal" do
+    it "simple '" $
+      prsi stringLit "'abc'" `parses` "abc" `leaving` ""
+    it "simple \"" $
+      prsi stringLit "\"abc\"" `parses` "abc" `leaving` ""
+    it "next without spaces" $
+      prsi stringLit "'abc'd" `parses` "abc" `leaving` "d"
+    it "next with spaces" $
+      prsi stringLit "'abc'  d" `parses` "abc" `leaving` "d"
+    it "fail: eof" $
+      prsi stringLit "'abc" `failsLeaving` ""
+    it "fail: eol" $
+      prsi stringLit "'abc\nd'" `failsLeaving` "\nd'"

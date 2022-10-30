@@ -1,9 +1,10 @@
 {-# LANGUAGE RecordWildCards #-}
 module Language.FineTeX.Source.Parser.Definitions where
+
+import Control.Monad.Combinators.Expr (Operator(..), makeExprParser)
 import Data.Maybe (isJust)
 import Language.FineTeX.Source.Parser.Utils
 import Language.FineTeX.Source.Syntax
-import Language.FineTeX.Utils
 import Text.Megaparsec
 import Text.Megaparsec.Char
 
@@ -64,8 +65,8 @@ pPatMatchEl =  (PatMatchEl Nothing <$> pRegExp)
     <|> betweenSymbols "(" ")"
           (PatMatchEl . Just <$> ident <* symbol ":" <*> pRegExp)
 
-pRegExp :: m (RegExp PosOff)
-pRegExp = todo
+pRegExp :: ParserM m => m (RegExp PosOff)
+pRegExp = REWord <$ keyword "Word"
 
 pMode :: ParserM m => m (Mode PosOff)
 pMode = do
@@ -80,5 +81,17 @@ pProcess = do
   exp <- optional pExp
   pure $ ProcStatement name exp
 
-pExp :: m (Exp PosOff)
-pExp = todo
+pExp :: ParserM m => m (Exp PosOff)
+pExp = makeExprParser pTerm operators
+  where
+    pTerm = choice
+      [ EStringLit <$> stringLit
+      , EIdent <$> ident
+      , betweenSymbols "(" ")" pExp]
+    operators =
+      [ [ Prefix $ EPrefOp <$> located (symbol "!!")
+        , Prefix $ EPrefOp <$> located (symbol "!")
+        ]
+      , [ InfixL $ pure EApp ]
+      , [ InfixL $ flip EBinOp <$> located (symbol "+") ]
+      ]
