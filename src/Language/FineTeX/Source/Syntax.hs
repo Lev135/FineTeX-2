@@ -56,7 +56,7 @@ data DefInModeBlock
 -- | @name {args} ["#" inner] "=>" {process}@
 data DefEnv = DefEnv
   { name    :: PText
-  , args    :: [PatMatchExp]
+  , args    :: PatMatchExp
   , inner   :: Maybe EnvInner
   , process :: [ProcStatement]
   }

@@ -26,6 +26,11 @@ instance IsString Exp where
 
 spec :: Spec
 spec = do
+  let st = ProcStatement
+      pme = PatMatchExp
+      pmel = PatMatchEl
+      d = DefEnv
+
   context "pExp" do
     it "string litteral" $
       prs' pExp "'abc'" `parses` "abc" `leaving` ""
@@ -47,7 +52,6 @@ spec = do
     it "fails: empty" $
       prs' pExp "" `failsLeaving` ""
   context "process" do
-    let st = ProcStatement
     it "empty" $
       prs' pProcess "" `failsLeaving` ""
     it "one" $
@@ -66,3 +70,56 @@ spec = do
       prs' pProcess "@Foo @Bar x"
         `parses` st "Foo" Nothing
         `leaving` "@Bar x"
+  context "patMatchExp" do
+    let p = prs' pPatMatchExp
+    it "empty" $
+      p "" `parses` pme [] `leaving` ""
+    it "one with var" $
+      p "(a : Word)"
+        `parses` pme [pmel (Just "a") REWord]
+        `leaving` ""
+    it "one without var" $
+      p "Word"
+        `parses` pme [pmel Nothing REWord]
+        `leaving` ""
+    it "two" $
+      p "(a : Word) Word"
+        `parses` pme [pmel (Just "a") REWord, pmel Nothing REWord]
+        `leaving` ""
+  context "env definition" do
+    let p = prs' pDefEnv
+    it "empty definition" $
+      p "env => " `parses` d "env" (pme []) Nothing [] `leaving` ""
+    it "with proc statement" $
+      p "env => @Foo 'Hello' @Bar 'World'"
+        `parses` d "env" (pme []) Nothing
+          [st "Foo" $ Just "Hello", st "Bar" $ Just "World"]
+        `leaving` ""
+    it "with arguments" $
+      p "env (a : Word) (b : Word) Word => "
+        `parses` d "env" (pme [
+            pmel (Just "a") REWord, pmel (Just "b") REWord, pmel Nothing REWord
+          ]) Nothing []
+        `leaving` ""
+    it "with verb inner" $
+      p "env # Verb => "
+        `parses` d "env" (pme []) (Just Verb) []
+        `leaving` ""
+    it "empty non-verb" $
+      p "env #  => "
+        `parses` d "env" (pme []) (Just $ NonVerb $ Mode Nothing False) []
+        `leaving` ""
+    it "with non-verb inner + Math" $
+      p "env # Math => "
+        `parses` d "env" (pme []) (Just $ NonVerb $ Mode (Just "Math") False) []
+        `leaving` ""
+    it "with non-verb inner + Math + noPref" $
+      p "env # NoPref Math => "
+        `parses` d "env" (pme []) (Just $ NonVerb $ Mode (Just "Math") True) []
+        `leaving` ""
+    it "with non-verb inner + noPref" $
+      p "env # NoPref => "
+        `parses` d "env" (pme []) (Just $ NonVerb $ Mode Nothing True) []
+        `leaving` ""
+    it "fail: empty" $
+      p "" `failsLeaving` ""

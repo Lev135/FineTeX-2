@@ -35,7 +35,7 @@ pDefInModeBlock = choice
 pDefEnv :: ParserM m => m DefEnv
 pDefEnv = lineFold do
   name <- ident
-  args <- many pArg
+  args <- pPatMatchExp
   inner <- optional do
     symbol "#"
     Verb <$ keyword "Verb" <|> NonVerb <$> pMode
@@ -54,11 +54,8 @@ pDefPref = lineFold do
   process <- many pProcess
   pure DefPref{..}
 
-pArg :: ParserM m => m PatMatchExp
-pArg = betweenSymbols "(" ")" pPatMatchExp
-
 pPatMatchExp :: ParserM m => m PatMatchExp
-pPatMatchExp = PatMatchExp <$> some pPatMatchEl
+pPatMatchExp = PatMatchExp <$> many pPatMatchEl
 
 pPatMatchEl :: ParserM m => m PatMatchEl
 pPatMatchEl =  (PatMatchEl Nothing <$> pRegExp)

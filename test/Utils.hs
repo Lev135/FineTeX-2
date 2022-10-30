@@ -1,6 +1,5 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 module Utils where
-import Control.Monad (void)
 import Data.String (IsString(..))
 import Data.Text (Text)
 import Data.Void (Void)
