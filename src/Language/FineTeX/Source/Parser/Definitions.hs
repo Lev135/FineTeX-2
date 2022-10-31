@@ -10,7 +10,7 @@ import Text.Megaparsec.Char
 
 pDefinitions :: ParserM m => m DefBlock
 pDefinitions = nonIndented $
-  DefBlock <$ keyword "@Define"
+  id <$ keyword "@Define"
     `headedMany` pDefSubBlock
 
 pDefSubBlock :: ParserM m => m DefSubBlock
@@ -35,7 +35,7 @@ pDefInModeBlock = choice
 pDefEnv :: ParserM m => m DefEnv
 pDefEnv = lineFold do
   name <- ident
-  args <- pPatMatchExp
+  args <- many pArg
   inner <- optional do
     symbol "#"
     Verb <$ keyword "Verb" <|> NonVerb <$> pMode
@@ -46,7 +46,7 @@ pDefEnv = lineFold do
 pDefPref :: ParserM m => m DefPref
 pDefPref = lineFold do
   name <- optional $ ident <* symbol ":"
-  expr <- pPatMatchExp
+  expr <- many pPatMatchEl
   innerMode <- optional do
     symbol "#"
     pMode
@@ -54,8 +54,11 @@ pDefPref = lineFold do
   process <- many pProcess
   pure DefPref{..}
 
-pPatMatchExp :: ParserM m => m PatMatchExp
-pPatMatchExp = PatMatchExp <$> many pPatMatchEl
+pArg :: ParserM m => m Arg
+pArg = betweenSymbols "(" ")" (Arg <$> ident <* symbol ":" <*> pTy)
+
+pTy :: ParserM m => m Ty
+pTy = TyString <$ keyword "String"
 
 pPatMatchEl :: ParserM m => m PatMatchEl
 pPatMatchEl =  (PatMatchEl Nothing <$> pRegExp)
@@ -63,7 +66,9 @@ pPatMatchEl =  (PatMatchEl Nothing <$> pRegExp)
           (PatMatchEl . Just <$> ident <* symbol ":" <*> pRegExp)
 
 pRegExp :: ParserM m => m RegExp
-pRegExp = REWord <$ keyword "Word"
+pRegExp
+  = REWord <$ keyword "Word"
+  <|> REString <$> stringLit
 
 pMode :: ParserM m => m Mode
 pMode = do

@@ -1,11 +1,14 @@
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE QuasiQuotes #-}
 module Source.Parser.Definitions where
 import Data.String (IsString(..))
 import Language.FineTeX.Source.Parser.Definitions
 import Language.FineTeX.Source.Syntax
 import Test.Hspec
 import Test.Hspec.Megaparsec
+import Text.Megaparsec
+import Text.RawString.QQ
 import Utils
 
 x, y :: Exp
@@ -23,13 +26,16 @@ evm = EApp . EPrefOp "!!"
 
 instance IsString Exp where
   fromString = EStringLit . fromString
+instance IsString RegExp where
+  fromString = REString . fromString
+instance IsString a => IsString (Maybe a) where
+  fromString "" = Nothing
+  fromString s  = Just $ fromString s
 
 spec :: Spec
 spec = do
   let st = ProcStatement
-      pme = PatMatchExp
       pmel = PatMatchEl
-      d = DefEnv
 
   context "pExp" do
     it "string litteral" $
@@ -71,55 +77,130 @@ spec = do
         `parses` st "Foo" Nothing
         `leaving` "@Bar x"
   context "patMatchExp" do
-    let p = prs' pPatMatchExp
+    let p = prs' (many pPatMatchEl)
     it "empty" $
-      p "" `parses` pme [] `leaving` ""
+      p "" `parses` [] `leaving` ""
     it "one with var" $
       p "(a : Word)"
-        `parses` pme [pmel (Just "a") REWord]
+        `parses` [pmel (Just "a") REWord]
         `leaving` ""
     it "one without var" $
       p "Word"
-        `parses` pme [pmel Nothing REWord]
+        `parses` [pmel Nothing REWord]
         `leaving` ""
     it "two" $
       p "(a : Word) Word"
-        `parses` pme [pmel (Just "a") REWord, pmel Nothing REWord]
+        `parses` [pmel (Just "a") REWord, pmel Nothing REWord]
         `leaving` ""
   context "env definition" do
     let p = prs' pDefEnv
+        d = DefEnv
     it "empty definition" $
-      p "env => " `parses` d "env" (pme []) Nothing [] `leaving` ""
+      p "env => " `parses` d "env" [] Nothing [] `leaving` ""
     it "with proc statement" $
       p "env => @Foo 'Hello' @Bar 'World'"
-        `parses` d "env" (pme []) Nothing
+        `parses` d "env" [] Nothing
           [st "Foo" $ Just "Hello", st "Bar" $ Just "World"]
         `leaving` ""
     it "with arguments" $
-      p "env (a : Word) (b : Word) Word => "
-        `parses` d "env" (pme [
-            pmel (Just "a") REWord, pmel (Just "b") REWord, pmel Nothing REWord
-          ]) Nothing []
+      p "env (a : String) (b : String) (c : String) => "
+        `parses` d "env" [
+            Arg "a" TyString, Arg "b" TyString, Arg "c" TyString
+          ] Nothing []
         `leaving` ""
     it "with verb inner" $
       p "env # Verb => "
-        `parses` d "env" (pme []) (Just Verb) []
+        `parses` d "env" [] (Just Verb) []
         `leaving` ""
     it "empty non-verb" $
       p "env #  => "
-        `parses` d "env" (pme []) (Just $ NonVerb $ Mode Nothing False) []
+        `parses` d "env" [] (Just $ NonVerb $ Mode Nothing False) []
         `leaving` ""
     it "with non-verb inner + Math" $
       p "env # Math => "
-        `parses` d "env" (pme []) (Just $ NonVerb $ Mode (Just "Math") False) []
+        `parses` d "env" [] (Just $ NonVerb $ Mode (Just "Math") False) []
         `leaving` ""
     it "with non-verb inner + Math + noPref" $
       p "env # NoPref Math => "
-        `parses` d "env" (pme []) (Just $ NonVerb $ Mode (Just "Math") True) []
+        `parses` d "env" [] (Just $ NonVerb $ Mode (Just "Math") True) []
         `leaving` ""
     it "with non-verb inner + noPref" $
       p "env # NoPref => "
-        `parses` d "env" (pme []) (Just $ NonVerb $ Mode Nothing True) []
+        `parses` d "env" [] (Just $ NonVerb $ Mode Nothing True) []
         `leaving` ""
     it "fail: empty" $
       p "" `failsLeaving` ""
+  describe "Full definitions block" do
+    let res =
+          [ DefModeBlock
+            [ DefMode "Simple"
+            , DefMode "Math"
+            ]
+          , DefInModeBlock "Simple"
+              [ DefEnvBlock
+                [ DefEnv "Foo" [] Nothing
+                    [ st "Begin" $ Just "Foo begin"
+                    , st "End" $ Just "Foo end"
+                    ]
+                , DefEnv "Bar"
+                    [ Arg "x" TyString
+                    , Arg "y" TyString
+                    ]
+                    Nothing
+                    [ st "End" $ Just $ "Bar " +> x ]
+                , DefEnv "Baz" [] (Just $ NonVerb $ Mode "Math" False) []
+                , DefEnv "Tmp" [] (Just $ NonVerb $ Mode "Math" True) []
+                , DefEnv "Verb" [] (Just Verb) []
+                ]
+              , DefPrefBlock
+                [ DefPref "" [pmel "" ">"] Nothing
+                  [ st "Begin" ""
+                  , st "Sep" "\\\\"
+                  ]
+                ]
+              ]
+          ]
+    it "simple" $
+      prs' pDefinitions
+        [r|
+@Define
+  @Modes
+    Simple
+    Math
+  @In Simple
+    @Environments
+      Foo => @Begin "Foo begin" @End "Foo end"
+      Bar (x : String) (y : String) => @End "Bar " + x
+      Baz # Math =>
+      Tmp # NoPref Math =>
+      Verb # Verb =>
+    @Prefs
+      ">" => @Begin @Sep "\\"
+        |]
+        `parses` res
+        `leaving` ""
+    it "lineFolded" $
+      prs' pDefinitions
+        [r|
+@Define
+  @Modes
+    Simple
+    Math
+  @In Simple
+    @Environments
+      Foo =>
+        @Begin "Foo begin"
+        @End "Foo end"
+      Bar (x : String)
+          (y : String)
+            =>
+              @End "Bar " + x
+      Baz # Math =>
+      Tmp # NoPref Math =>
+      Verb # Verb =>
+    @Prefs
+      ">" =>
+        @Begin @Sep "\\"
+        |]
+        `parses` res
+        `leaving` ""

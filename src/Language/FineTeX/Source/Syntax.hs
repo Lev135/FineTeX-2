@@ -35,9 +35,7 @@ data Document = Document
 -- * Imports (TODO)
 
 -- * Definitions
-newtype DefBlock
-  = DefBlock [DefSubBlock]
-  deriving (Eq, Generic, Ord, Show)
+type DefBlock = [DefSubBlock]
 
 data DefSubBlock
   = DefModeBlock [DefMode]
@@ -56,7 +54,7 @@ data DefInModeBlock
 -- | @name {args} ["#" inner] "=>" {process}@
 data DefEnv = DefEnv
   { name    :: PText
-  , args    :: PatMatchExp
+  , args    :: [Arg]
   , inner   :: Maybe EnvInner
   , process :: [ProcStatement]
   }
@@ -79,7 +77,7 @@ data Mode = Mode
 -- | @[name:] expr [# innerMode] => {process}@
 data DefPref = DefPref
   { name      :: Maybe PText
-  , expr      :: PatMatchExp
+  , expr      :: [PatMatchEl]
   , innerMode :: Maybe Mode
   , process   :: [ProcStatement]
   }
@@ -87,9 +85,13 @@ data DefPref = DefPref
 
 -- ** Primitives
 
-newtype PatMatchExp
-  = PatMatchExp [PatMatchEl]
+data Arg = Arg
+  { varName :: PText
+  , varType :: Ty
+  }
   deriving (Eq, Generic, Ord, Show)
+
+data Ty = TyString deriving (Eq, Generic, Ord, Show)
 
 data PatMatchEl = PatMatchEl
   { varName  :: Maybe PText
@@ -103,7 +105,10 @@ data ProcStatement = ProcStatement
   }
   deriving (Eq, Generic, Ord, Show)
 
-data RegExp = REWord deriving (Eq, Generic, Ord, Show)
+data RegExp
+  = REWord
+  | REString PText
+  deriving (Eq, Generic, Ord, Show)
 
 type CharRange = (Char, Char)
 
