@@ -9,6 +9,7 @@ import Data.Text (Text)
 import Language.FineTeX.Source.Errors
 import Language.FineTeX.Source.Preprocess
 import Language.FineTeX.Source.Syntax
+import Language.FineTeX.Utils (Pos(..), Posed, SourceId(..), getPos, pos)
 
 
 type PreprocM = ExceptT [SourceError] (State Definitions)
@@ -21,6 +22,9 @@ run ma x = runExceptT (ma x) `runState` defs mempty mempty
 
 ok :: Either a ()
 ok = Right ()
+
+p0 :: (Int, Int) -> a -> Posed a
+p0 p = pos (Pos (SourceId 0) p)
 
 spec :: Spec
 spec = do
@@ -36,21 +40,40 @@ spec = do
     it "multiple modes declaration" $
       run preprocDefs
           [ DefModeBlock
-            [ DefMode "Simple"
-            , DefMode "Math"
-            , DefMode "Simple"
-            , DefMode "Tmp"
+            [ DefMode $ p0 (1,  6)  "Simple"
+            , DefMode $ p0 (10, 15) "Math"
+            , DefMode $ p0 (20, 26) "Simple"
+            , DefMode $ p0 (30, 40) "Tmp"
             ]
           ]
         `shouldBe` (
-          Left [DuplicateDef TyDefMode "Simple" Nothing],
+          Left [ DuplicateDef TyDefMode
+                    (p0 (20, 26) "Simple")
+                    (getPos $ p0 (1, 6) ())
+               ],
           defs
-            [ ("Simple", DefMode "Simple")
-            , ("Math", DefMode "Math")
-            , ("Tmp", DefMode "Tmp")
+            [ ("Simple", DefMode $ p0 (1, 6) "Simple")
+            , ("Math", DefMode $ p0 (10, 15) "Math")
+            , ("Tmp", DefMode $ p0 (30, 40) "Tmp")
             ]
             []
           )
+    it "two blocks of definitions in the same mode" $
+      run preprocDefs
+        [ DefInModeBlock (p0 (1, 5) "A")
+            [ DefEnvBlock [ DefEnv (p0 (6, 9) "E1") [] Nothing []]]
+        , DefInModeBlock (p0 (10, 15) "A")
+            [ DefEnvBlock [ DefEnv (p0 (16, 19) "E2") [] Nothing []]]
+        ] `shouldBe` (ok,
+          defs
+            []
+            [ ("A", InModeDefs (getPos $ p0 (1, 5) ())
+                [ ("E1", DefEnv (p0 (6,  9)  "E1") [] Nothing [])
+                , ("E2", DefEnv (p0 (16, 19) "E2") [] Nothing [])
+                ] []
+              )
+            ]
+        )
     it "environments with the same name in different modes" $
       run preprocDefs
         [ DefInModeBlock "A" [ DefEnvBlock [ DefEnv "E" [] Nothing [] ] ]
