@@ -98,6 +98,7 @@ test-suite finetex-test
                       UtilsSpec
                       Source.Parser.UtilsSpec
                       Source.Parser.DefinitionsSpec
+                      Source.PreprocessSpec
 
   type:               exitcode-stdio-1.0
   build-depends:      finetex

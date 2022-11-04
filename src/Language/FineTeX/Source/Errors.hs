@@ -21,6 +21,7 @@ instance P.Pretty DefTy where
 data SourceError
   = ParseError (ParseErrorBundle Text Void)
   | DuplicateDef DefTy (Posed Text) (Maybe Pos)
+  deriving (Eq, Generic, Show)
 
 instance PrettyErr SourceError where
   prettyErr = \case
