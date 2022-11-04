@@ -97,7 +97,7 @@ test-suite finetex-test
   other-modules:      Utils
                       UtilsSpec
                       Source.Parser.UtilsSpec
-                      Source.Parser.Definitions
+                      Source.Parser.DefinitionsSpec
 
   type:               exitcode-stdio-1.0
   build-depends:      finetex

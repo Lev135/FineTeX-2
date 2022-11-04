@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 {-# LANGUAGE QuasiQuotes #-}
-module Source.Parser.Definitions where
+module Source.Parser.DefinitionsSpec where
 import Data.String (IsString(..))
 import Language.FineTeX.Source.Parser.Definitions
 import Language.FineTeX.Source.Syntax
