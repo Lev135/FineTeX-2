@@ -1,8 +1,9 @@
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveFunctor      #-}
 module Language.FineTeX.Utils where
 import Control.Monad.Except (MonadError(throwError))
 import Control.Monad.Writer (MonadWriter(tell), WriterT(runWriterT))
-import Data.Function (on)
+import Data.Data (Data, Typeable)
 import Data.Map (Map)
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
@@ -23,7 +24,7 @@ todo = error "todo"
 
 newtype SourceId
   = SourceId Int
-  deriving (Eq, Ord, Show)
+  deriving (Data, Eq, Ord, Show, Typeable)
 
 data Pos = Pos
   { -- | Source file id
@@ -31,13 +32,13 @@ data Pos = Pos
     -- | Range of source offsets, where element is situated
   , posRange  :: (Int, Int)
   }
-  deriving (Eq, Ord, Show)
+  deriving (Data, Eq, Ord, Show, Typeable)
 
 data Posed a = Posed
   { getPos :: Maybe Pos
   , getVal :: a
   }
-  deriving (Functor, Generic)
+  deriving (Data, Eq, Functor, Generic, Ord, Show, Typeable)
 
 instance Semigroup a => Semigroup (Posed a) where
   x <> y = firstLastPos x y (getVal x <> getVal y)
@@ -80,13 +81,6 @@ runErrorM ma = do
   if null es
     then pure a
     else throwError es
-
-instance Eq a => Eq (Posed a) where
-  (==) = (==) `on` getVal
-instance Ord a => Ord (Posed a) where
-  compare = compare `on` getVal
-instance Show a => Show (Posed a) where
-  show = show . getVal
 
 type ErrDoc = P.Doc Void
 
