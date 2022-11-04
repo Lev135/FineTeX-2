@@ -3,7 +3,9 @@
 -}
 module Language.FineTeX.Source.Syntax where
 
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
+import qualified Data.Text as T
 import GHC.Generics (Generic)
 import Language.FineTeX.Utils
 
@@ -11,7 +13,7 @@ import Language.FineTeX.Utils
 type PText = Posed Text
 
 data Document = Document
-  { definitions :: Maybe DefBlock
+  { definitions :: [DefSubBlock]
   , body        :: [DocElement]
   }
   deriving (Eq, Generic, Ord, Show)
@@ -20,8 +22,6 @@ data Document = Document
 -- * Imports (TODO)
 
 -- * Definitions
-type DefBlock = [DefSubBlock]
-
 data DefSubBlock
   = DefModeBlock [DefMode]
   | DefInModeBlock PText [DefInModeBlock]
@@ -125,3 +125,27 @@ data EnvBody el
   = VerbBody [PText]
   | NonVerbBody [el]
   deriving (Eq, Generic, Ord, Show)
+
+-- * Generic names for prefixes and pretty-printing
+
+-- | Generic name for prefs. Should be unique
+genericPrefName :: DefPref -> PText
+genericPrefName DefPref{name, expr} =
+  fromMaybe (ppExpr expr) name
+
+-- | Pretty-print PatMatchExp (the list of `PatMatchEl`s).
+-- Used for generic names
+ppExpr :: [PatMatchEl] -> PText
+ppExpr = fmap T.unwords . sequencePos . map ppPatMatchEl
+
+-- | Pretty-print `PatMatchEl`. Used for generic names
+ppPatMatchEl :: PatMatchEl -> Posed Text
+ppPatMatchEl PatMatchEl{varName, matchExp} = case varName of
+  (Just name) -> "(" <> name <> ": " <> ppMatchExp matchExp <> ")"
+  Nothing     -> ppMatchExp matchExp
+
+-- | Pretty-print `RegExp`. Used for generic names
+ppMatchExp :: RegExp -> PText
+ppMatchExp = \case
+  REWord        -> "REWord"
+  REString pstr -> pstr

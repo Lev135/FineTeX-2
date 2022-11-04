@@ -1,8 +1,12 @@
+{-# LANGUAGE DeriveFunctor #-}
 module Language.FineTeX.Utils where
+import Control.Monad.Except (MonadError(throwError))
+import Control.Monad.Writer (MonadWriter(tell), WriterT(runWriterT))
 import Data.Function (on)
 import Data.Map (Map)
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
+import Data.String (IsString(..))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void (Void)
@@ -33,13 +37,49 @@ data Posed a = Posed
   { getPos :: Maybe Pos
   , getVal :: a
   }
-  deriving (Generic)
+  deriving (Functor, Generic)
 
+instance Semigroup a => Semigroup (Posed a) where
+  x <> y = firstLastPos x y (getVal x <> getVal y)
+
+instance Monoid a => Monoid (Posed a) where
+  mempty = nopos mempty
+
+instance IsString s => IsString (Posed s) where
+  fromString = nopos . fromString
 nopos :: a -> Posed a
 nopos = Posed Nothing
 
 pos :: Pos -> a -> Posed a
 pos p = Posed (Just p)
+
+posFrom :: a -> Posed b -> Posed a
+posFrom a (Posed p _) = Posed p a
+
+firstLastPos :: Posed a -> Posed b -> c -> Posed c
+firstLastPos (Posed p _) (Posed p' _) = Posed pos
+  where pos = case (p, p') of
+          (Nothing, _) -> p'
+          (_, Nothing) -> p
+          (Just (Pos src (b, _)), Just (Pos _ (_, e)))
+                       -> Just $ Pos src (b, e)
+
+sequencePos :: [Posed a] -> Posed [a]
+sequencePos [] = nopos []
+sequencePos xs = firstLastPos (head xs) (last xs) (getVal <$> xs)
+
+
+type ErrorT e m = WriterT [e] m
+
+tellErr :: MonadWriter [e] m => e -> m ()
+tellErr = tell . (:[])
+
+runErrorM :: MonadError [e] m => ErrorT e m a -> m a
+runErrorM ma = do
+  (a, es) <- runWriterT ma
+  if null es
+    then pure a
+    else throwError es
 
 instance Eq a => Eq (Posed a) where
   (==) = (==) `on` getVal

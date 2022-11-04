@@ -68,6 +68,9 @@ library
   hs-source-dirs:     src
   exposed-modules:    Language.FineTeX
                       Language.FineTeX.Utils
+                      Language.FineTeX.Source
+                      Language.FineTeX.Source.Preprocess
+                      Language.FineTeX.Source.Errors
                       Language.FineTeX.Source.Syntax
                       Language.FineTeX.Source.Parser.Utils
                       Language.FineTeX.Source.Parser.Definitions

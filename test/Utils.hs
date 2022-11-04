@@ -1,7 +1,5 @@
-{-# OPTIONS_GHC -Wno-orphans #-}
 module Utils where
 import Control.Monad.Reader (ReaderT(runReaderT))
-import Data.String (IsString(..))
 import Data.Text (Text)
 import Data.Void (Void)
 import Language.FineTeX.Source.Parser.Utils
@@ -9,9 +7,6 @@ import Language.FineTeX.Utils
 import Test.Hspec.Megaparsec
 import Text.Megaparsec
 import Text.Megaparsec.Char
-
-instance (IsString a) => IsString (Posed a) where
-  fromString = Posed Nothing . fromString
 
 type Parser = ReaderT ParserEnv (ScT (Parsec Void Text))
 

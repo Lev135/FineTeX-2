@@ -8,7 +8,7 @@ import Language.FineTeX.Source.Syntax
 import Text.Megaparsec
 import Text.Megaparsec.Char
 
-pDefinitions :: ParserM m => m DefBlock
+pDefinitions :: ParserM m => m [DefSubBlock]
 pDefinitions = nonIndented $
   id <$ keyword "@Define"
     `headedMany` pDefSubBlock
