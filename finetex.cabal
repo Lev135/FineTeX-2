@@ -92,6 +92,7 @@ test-suite finetex-test
   hs-source-dirs:     test
   main-is:            Spec.hs
   other-modules:      Utils
+                      UtilsSpec
                       Source.Parser.UtilsSpec
                       Source.Parser.Definitions
 

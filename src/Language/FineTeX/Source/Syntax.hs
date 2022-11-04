@@ -3,25 +3,10 @@
 -}
 module Language.FineTeX.Source.Syntax where
 
-import Data.Function (on)
 import Data.Text (Text)
 import GHC.Generics (Generic)
+import Language.FineTeX.Utils
 
--- | Range of source offsets, where element is situated
-type Pos = Maybe (Int, Int)
-
-data Posed a = Posed
-  { getPos :: Pos
-  , getVal :: a
-  }
-  deriving (Generic)
-
-instance Eq a => Eq (Posed a) where
-  (==) = (==) `on` getVal
-instance Ord a => Ord (Posed a) where
-  compare = compare `on` getVal
-instance Show a => Show (Posed a) where
-  show = show . getVal
 
 type PText = Posed Text
 

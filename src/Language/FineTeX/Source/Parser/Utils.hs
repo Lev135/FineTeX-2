@@ -1,5 +1,5 @@
 module Language.FineTeX.Source.Parser.Utils (
-  ParserM, BaseParserM,
+  ParserEnv(..), ParserM, BaseParserM,
   L.ScT, runScT,
   located,
   L.nonIndented,
@@ -8,17 +8,22 @@ module Language.FineTeX.Source.Parser.Utils (
   L.symbol, keyword, ident, word, stringLit
 ) where
 
+import Control.Monad.RWS (MonadReader, asks)
 import Data.Char (isAlpha, isAlphaNum, isSpace)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void (Void)
-import Language.FineTeX.Source.Syntax (PText, Posed(..))
+import Language.FineTeX.Source.Syntax (PText)
+import Language.FineTeX.Utils
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Text.Megaparsec.Char.Lexer.Stateful (MonadParsecSc)
 import qualified Text.Megaparsec.Char.Lexer.Stateful as L
 
-type ParserM m = (MonadParsecSc Void Text m)
+newtype ParserEnv
+  = ParserEnv { parserSource :: SourceId }
+
+type ParserM m = (MonadReader ParserEnv m, MonadParsecSc Void Text m)
 type BaseParserM m = MonadParsec Void Text m
 
 -- | Run `ScT`, used by FineTeX's parser
@@ -32,7 +37,8 @@ located pa = do
   b <- getOffset
   a <- pa
   e <- getOffset
-  pure $ Posed (Just (b, e)) a
+  locSource <- asks parserSource
+  pure $ Posed (Just $ Pos locSource (b, e)) a
 
 -- | Skip comment (without @eol@ after it)
 skipLineComment :: BaseParserM m => m ()
